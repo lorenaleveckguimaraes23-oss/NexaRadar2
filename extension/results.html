@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ofertas — Nexa Radar</title>
+    <link rel="stylesheet" href="results.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <div>
+                <span class="eyebrow">Nexa Radar</span>
+                <h1>Compare por loja</h1>
+                <p id="subtitle">Ofertas organizadas, sem links de propaganda.</p>
+            </div>
+
+            <button id="backButton" type="button">Voltar</button>
+        </header>
+
+        <section id="overview" class="overview">
+            <div>
+                <span>Ofertas válidas</span>
+                <strong id="totalCount">0</strong>
+            </div>
+
+            <div>
+                <span>Menor preço</span>
+                <strong id="lowestPrice">—</strong>
+            </div>
+
+            <label>
+                Ordenar por
+                <select id="sortSelect">
+                    <option value="relevance">Melhores resultados</option>
+                    <option value="lowest">Menor preço</option>
+                    <option value="highest">Maior preço</option>
+                </select>
+            </label>
+        </section>
+
+        <nav id="storeFilters" class="store-filters"></nav>
+
+        <section id="bestOffer" class="best-offer hidden"></section>
+
+        <section id="storeSections" class="store-sections"></section>
+    </main>
+
+    <script src="results.js"></script>
+</body>
+</html>

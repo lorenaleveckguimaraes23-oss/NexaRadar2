@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Nexa Radar</title>
+
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <main class="app-shell">
+        <div class="ambient ambient-one"></div>
+        <div class="ambient ambient-two"></div>
+
+        <header class="hero">
+            <div class="brand-row">
+                <div class="logo-wrap">
+                    <img
+                        src="assets/logo.png"
+                        alt="Logo do Nexa Radar"
+                        class="logo"
+                    >
+                </div>
+
+                <div class="brand-copy">
+                    <div class="brand-title-row">
+                        <h1>Nexa Radar</h1>
+
+                        <span class="status-badge">
+                            <span class="status-dot"></span>
+                            IA ativa
+                        </span>
+                    </div>
+
+                    <p>
+                        Compare preços e compre com inteligência.
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <section
+            class="search-panel"
+            aria-label="Pesquisa de produtos"
+        >
+            <label for="searchInput" class="sr-only">
+                Produto que deseja pesquisar
+            </label>
+
+            <div class="input-wrap">
+                <svg
+                    class="input-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                    />
+                </svg>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="O que você procura hoje?"
+                    autocomplete="off"
+                    maxlength="100"
+                >
+            </div>
+
+            <button
+                type="button"
+                id="searchButton"
+                aria-label="Buscar melhores ofertas"
+            >
+                <span class="button-content">
+                    <!-- Ícone normal: lupa -->
+                    <svg
+                        class="search-button-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="11"
+                            cy="11"
+                            r="7"
+                        />
+
+                        <path
+                            d="m16.2 16.2 4.3 4.3"
+                        />
+                    </svg>
+
+                    <span>Buscar melhores ofertas</span>
+                </span>
+
+                <!-- Aparece somente enquanto estiver buscando -->
+                <span
+                    class="button-spinner"
+                    aria-hidden="true"
+                ></span>
+            </button>
+
+            <p
+                id="searchFeedback"
+                class="search-feedback"
+                role="status"
+                aria-live="polite"
+            ></p>
+        </section>
+
+        <section
+            id="loading"
+            class="loading"
+            aria-label="Carregando ofertas"
+        >
+            <div class="skeleton-card">
+                <div class="skeleton skeleton-image"></div>
+
+                <div class="skeleton-content">
+                    <div class="skeleton skeleton-small"></div>
+                    <div class="skeleton skeleton-line"></div>
+                    <div class="skeleton skeleton-line short"></div>
+                    <div class="skeleton skeleton-price"></div>
+                    <div class="skeleton skeleton-button"></div>
+                </div>
+            </div>
+        </section>
+
+        <section
+            id="summary"
+            class="summary hidden"
+            aria-live="polite"
+        >
+            <div>
+                <span class="summary-label">
+                    Ofertas encontradas
+                </span>
+
+                <strong id="resultCount">0</strong>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <div>
+                <span class="summary-label">
+                    Menor preço
+                </span>
+
+                <strong id="lowestPrice">—</strong>
+            </div>
+        </section>
+
+        <section
+            id="results"
+            class="results"
+            aria-live="polite"
+        ></section>
+
+        <footer>
+            <span>Powered by IA</span>
+            <span class="footer-dot">•</span>
+            <span>Nexa Radar 2.0</span>
+        </footer>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="product.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

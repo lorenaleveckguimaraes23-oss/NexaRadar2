@@ -1,0 +1,182 @@
+/* =====================================
+   NEXA RADAR
+   PRODUTOS - ESTILO VISUAL
+===================================== */
+
+
+
+#resultados {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 15px;
+
+    margin-top: 20px;
+
+}
+
+
+
+/* CARD DO PRODUTO */
+
+.produto-card {
+
+
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 16px;
+
+    box-shadow: 
+    0 4px 12px rgba(0,0,0,0.08);
+
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+
+    transition: 0.3s;
+
+
+}
+
+
+
+.produto-card:hover {
+
+
+    transform: translateY(-3px);
+
+
+}
+
+
+
+/* INFORMAÇÕES */
+
+.produto-info h3 {
+
+
+    margin: 0;
+
+    font-size: 16px;
+
+    color: #1b1b1b;
+
+
+}
+
+
+
+.loja {
+
+
+    margin: 8px 0;
+
+    color: #555;
+
+    font-size: 14px;
+
+
+}
+
+
+
+.avaliacao {
+
+
+    font-size: 14px;
+
+    letter-spacing: 2px;
+
+
+}
+
+
+
+.preco {
+
+
+    color: #0b57d0;
+
+    font-size: 22px;
+
+    margin: 5px 0;
+
+
+}
+
+
+
+/* BOTÃO */
+
+.botao-oferta {
+
+
+    background:
+
+    linear-gradient(
+        135deg,
+        #0066ff,
+        #00aaff
+    );
+
+
+    border: none;
+
+
+    color: white;
+
+
+    padding: 12px;
+
+
+    border-radius: 10px;
+
+
+    cursor: pointer;
+
+
+    font-size: 15px;
+
+
+    font-weight: bold;
+
+
+    transition: 0.3s;
+
+
+}
+
+
+
+.botao-oferta:hover {
+
+
+    opacity: 0.85;
+
+
+}
+
+
+
+/* SEM RESULTADOS */
+
+.sem-resultados {
+
+
+    text-align: center;
+
+    padding: 20px;
+
+
+    color: #555;
+
+
+}
