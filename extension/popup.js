@@ -1,5 +1,5 @@
 // =====================================
-// NEXA RADAR 2.0
+// NEXA RADAR 2.1.1
 // =====================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const response = await fetch(
-                `http://127.0.0.1:3000/search?q=${encodeURIComponent(query)}`,
+                `https://nexaradar2.onrender.com/search?q=${encodeURIComponent(query)}`,
                 {
                     method: "GET",
                     headers: {
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             showFeedback(
                 error.message === "Failed to fetch"
-                    ? "Não foi possível conectar ao servidor. Verifique se o backend está rodando em 127.0.0.1:3000."
+                    ? "Não foi possível conectar ao servidor do Nexa Radar. Tente novamente em alguns instantes."
                     : error.message
             );
 
@@ -137,6 +137,73 @@ document.addEventListener("DOMContentLoaded", () => {
         feedback.classList.remove("visible");
     }
 });
+
+
+function limparUrlMercadoLivre(value) {
+    try {
+        const url = new URL(String(value));
+        url.hash = "";
+        url.search = "";
+        return url.toString();
+    } catch {
+        return String(value || "").split("#")[0].split("?")[0];
+    }
+}
+
+function isMercadoLivre(product) {
+    const loja = String(product?.loja || product?.store || "").toLowerCase();
+    const link = String(product?.link || product?.url || "").toLowerCase();
+
+    return loja.includes("mercado livre") || link.includes("mercadolivre.com.br");
+}
+
+async function converterLinksMercadoLivre(products) {
+    const lista = Array.isArray(products)
+        ? products.map((product) => ({ ...product }))
+        : [];
+
+    const urls = lista
+        .filter(isMercadoLivre)
+        .map((product) => limparUrlMercadoLivre(product.link || product.url))
+        .filter(Boolean);
+
+    if (!urls.length) {
+        return lista;
+    }
+
+    try {
+        const resposta = await chrome.runtime.sendMessage({
+            action: "GERAR_LINKS_AFILIADOS_ML",
+            urls
+        });
+
+        if (!resposta?.sucesso) {
+            console.warn("[Mercado Livre] Links afiliados não gerados:", resposta?.erro);
+            return lista;
+        }
+
+        const links = resposta.links || {};
+
+        return lista.map((product) => {
+            if (!isMercadoLivre(product)) return product;
+
+            const original = limparUrlMercadoLivre(product.link || product.url);
+            const afiliado = links[original];
+
+            if (!afiliado) return { ...product, link: original };
+
+            return {
+                ...product,
+                link: afiliado,
+                linkOriginal: original,
+                afiliadoConfirmado: true
+            };
+        });
+    } catch (error) {
+        console.error("[Mercado Livre] Erro ao converter links:", error);
+        return lista;
+    }
+}
 
 function renderResults(products) {
     const results = document.getElementById("results");

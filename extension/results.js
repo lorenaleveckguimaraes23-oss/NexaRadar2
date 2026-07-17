@@ -267,8 +267,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (store.includes("mercado livre")) {
                 return (
-                    url.searchParams.get("af") === "true" &&
-                    url.searchParams.get("e") === "lc20260707150211"
+                    url.hostname === "meli.la" ||
+                    (
+                        url.hostname.includes("mercadolivre.com.br") &&
+                        url.pathname.startsWith("/social/lc20260707150211")
+                    )
                 );
             }
 

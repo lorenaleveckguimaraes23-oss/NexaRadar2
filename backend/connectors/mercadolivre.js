@@ -1,110 +1,13 @@
-const { chromium } = require("playwright-extra");
-const stealth = require("puppeteer-extra-plugin-stealth")();
-
+const axios=require("axios");
+const cheerio=require("cheerio");
+const {chromium}=require("playwright-extra");
+const stealth=require("puppeteer-extra-plugin-stealth")();
 chromium.use(stealth);
-
-const BASE = "https://lista.mercadolivre.com.br";
-
-function limparLinkProduto(href = "") {
-  try {
-    const url = new URL(href);
-    url.hash = "";
-
-    const parametrosRemover = [
-      "polycard_client", "be_origin", "search_layout", "position", "type",
-      "tracking_id", "wid", "sid", "matt_tool", "matt_word", "matt_source"
-    ];
-
-    parametrosRemover.forEach((parametro) => url.searchParams.delete(parametro));
-    return url.toString();
-  } catch {
-    return String(href || "").split("#")[0];
-  }
-}
-
-async function buscarMercadoLivre(termo) {
-  let navegador;
-
-  try {
-    navegador = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-    });
-
-    const contexto = await navegador.newContext({
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      viewport: { width: 1440, height: 1000 },
-      locale: "pt-BR",
-      extraHTTPHeaders: {
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8"
-      }
-    });
-
-    const pagina = await contexto.newPage();
-    const slug = encodeURIComponent(String(termo).trim()).replace(/%20/g, "-");
-
-    await pagina.goto(`${BASE}/${slug}`, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000
-    });
-
-    await pagina.waitForSelector(
-      "li.ui-search-layout__item, div.ui-search-result, .poly-card",
-      { timeout: 30000 }
-    ).catch(() => null);
-
-    const produtos = await pagina.evaluate(() => {
-      const cards = [...document.querySelectorAll(
-        "li.ui-search-layout__item, div.ui-search-result, .poly-card"
-      )].slice(0, 24);
-
-      const texto = (elemento) => elemento?.textContent?.replace(/\s+/g, " ").trim() || "";
-
-      const parsePreco = (card) => {
-        const inteiro = texto(card.querySelector(".andes-money-amount__fraction")).replace(/\D/g, "");
-        const centavos = texto(card.querySelector(".andes-money-amount__cents")).replace(/\D/g, "") || "00";
-        return inteiro ? Number(`${inteiro}.${centavos}`) : null;
-      };
-
-      return cards.map((card) => {
-        const nome = texto(card.querySelector(
-          ".poly-component__title, .ui-search-item__title, h2"
-        ));
-
-        const anchor = card.querySelector(
-          "a.poly-component__title, a.ui-search-link, a[href*='mercadolivre.com.br']"
-        );
-
-        const imagem = card.querySelector(
-          "img.poly-component__picture, img.ui-search-result-image__element, img"
-        );
-
-        return {
-          nome,
-          preco: parsePreco(card),
-          href: anchor?.href || anchor?.getAttribute("href") || "",
-          imagem: imagem?.currentSrc || imagem?.src || imagem?.getAttribute("data-src") || ""
-        };
-      }).filter((produto) =>
-        produto.nome && Number.isFinite(produto.preco) && produto.href
-      );
-    });
-
-    return produtos.map((produto) => ({
-      loja: "Mercado Livre",
-      nome: produto.nome,
-      preco: produto.preco,
-      link: limparLinkProduto(produto.href),
-      imagem: produto.imagem
-    }));
-  } catch (error) {
-    console.error("[Mercado Livre] Erro:", error.message);
-    return [];
-  } finally {
-    if (navegador) {
-      await navegador.close().catch(() => null);
-    }
-  }
-}
-
-module.exports = { buscarMercadoLivre, limparLinkProduto };
+const BASE="https://lista.mercadolivre.com.br";
+const slug=t=>encodeURIComponent(String(t).trim()).replace(/%20/g,"-");
+function limpar(h=""){try{const u=new URL(h,"https://www.mercadolivre.com.br");u.hash="";["polycard_client","be_origin","search_layout","position","type","tracking_id","wid","sid","matt_tool","matt_word","matt_source"].forEach(p=>u.searchParams.delete(p));return u.toString();}catch{return String(h||"").split("#")[0];}}
+function precoTexto(t=""){const m=String(t).match(/R\$\s*([\d.]+)(?:,(\d{2}))?/);if(!m)return null;const v=Number(`${m[1].replace(/\./g,"")}.${m[2]||"00"}`);return Number.isFinite(v)?v:null;}
+async function viaHttp(termo){const r=await axios.get(`${BASE}/${slug(termo)}`,{timeout:25000,headers:{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36","Accept-Language":"pt-BR,pt;q=0.9",Accept:"text/html"},validateStatus:s=>s>=200&&s<500});if(r.status!==200||typeof r.data!=="string")return[];const $=cheerio.load(r.data),out=[];$("li.ui-search-layout__item, div.ui-search-result, .poly-card, .ui-search-result__wrapper").each((_,e)=>{if(out.length>=30)return false;const c=$(e),nome=c.find(".poly-component__title,.ui-search-item__title,h2").first().text().replace(/\s+/g," ").trim(),link=c.find("a.poly-component__title,a.ui-search-link,a[href*='mercadolivre.com.br']").first().attr("href"),frac=c.find(".andes-money-amount__fraction").first().text().replace(/\D/g,""),cent=c.find(".andes-money-amount__cents").first().text().replace(/\D/g,"")||"00",preco=frac?Number(`${frac}.${cent}`):precoTexto(c.text()),imagem=c.find("img").first().attr("data-src")||c.find("img").first().attr("src")||"";if(nome&&link&&Number.isFinite(preco)&&preco>0)out.push({loja:"Mercado Livre",nome,preco,link:limpar(link),imagem});});return out;}
+async function viaBrowser(termo){let b;try{b=await chromium.launch({headless:true,args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage"]});const p=await b.newPage({userAgent:"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",viewport:{width:1440,height:1000},locale:"pt-BR"});await p.goto(`${BASE}/${slug(termo)}`,{waitUntil:"domcontentloaded",timeout:60000});await p.waitForSelector("li.ui-search-layout__item,div.ui-search-result,.poly-card",{timeout:25000}).catch(()=>null);const itens=await p.evaluate(()=>{const tx=e=>e?.textContent?.replace(/\s+/g," ").trim()||"";return [...document.querySelectorAll("li.ui-search-layout__item,div.ui-search-result,.poly-card")].slice(0,30).map(c=>{const nome=tx(c.querySelector(".poly-component__title,.ui-search-item__title,h2")),link=c.querySelector("a.poly-component__title,a.ui-search-link,a[href*='mercadolivre.com.br']")?.href||"",f=tx(c.querySelector(".andes-money-amount__fraction")).replace(/\D/g,""),ct=tx(c.querySelector(".andes-money-amount__cents")).replace(/\D/g,"")||"00",img=c.querySelector("img");return{nome,link,preco:f?Number(`${f}.${ct}`):null,imagem:img?.currentSrc||img?.src||img?.getAttribute("data-src")||""};}).filter(x=>x.nome&&x.link&&Number.isFinite(x.preco)&&x.preco>0);});return itens.map(x=>({loja:"Mercado Livre",nome:x.nome,preco:x.preco,link:limpar(x.link),imagem:x.imagem}));}finally{if(b)await b.close().catch(()=>null);}}
+async function buscarMercadoLivre(termo){try{const h=await viaHttp(termo);if(h.length)return h;return await viaBrowser(termo);}catch(e){console.error("[Mercado Livre]",e.message);try{return await viaBrowser(termo);}catch{return[];}}}
+module.exports={buscarMercadoLivre};
