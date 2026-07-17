@@ -31,10 +31,11 @@ function possuiAfiliado(produto = {}) {
         }
 
         if (loja.includes("mercado livre")) {
+            // O backend devolve a URL limpa. A extensão converte para o
+            // short_url oficial usando a sessão autenticada da afiliada.
             return (
-                url.hostname.includes("mercadolivre.com.br") &&
-                url.searchParams.get("af") === "true" &&
-                url.searchParams.get("e") === "lc20260707150211"
+                url.hostname.includes("mercadolivre.com.br") ||
+                url.hostname.includes("mercadolibre.com")
             );
         }
 
