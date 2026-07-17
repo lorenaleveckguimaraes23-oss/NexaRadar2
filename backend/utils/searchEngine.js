@@ -1,65 +1,14 @@
 // =====================================
-// NEXA RADAR - MOTOR DE RESULTADOS
-// Organização por loja + somente links afiliados
+// NEXA RADAR 2.1 - MOTOR DE RESULTADOS
+// Relevância flexível + resultados válidos
 // =====================================
 
 const STOP_WORDS = new Set([
     "a", "o", "as", "os", "de", "da", "do", "das", "dos",
-    "com", "para", "por", "em", "um", "uma"
+    "com", "para", "por", "em", "um", "uma", "e"
 ]);
 
-const STORE_LIMIT = 8;
-
-/**
- * Só permite links que carregam uma identificação de afiliado conhecida.
- * Atualize os identificadores abaixo caso seus códigos mudem.
- */
-function possuiAfiliado(produto = {}) {
-    const loja = normalizarTexto(produto.loja);
-    const link = String(produto.link || "");
-
-    if (!link) return false;
-
-    try {
-        const url = new URL(link);
-
-        if (loja.includes("amazon")) {
-            return (
-                url.hostname.includes("amazon.com.br") &&
-                url.searchParams.get("tag") === "nexastore028-20"
-            );
-        }
-
-        if (loja.includes("mercado livre")) {
-            // O backend devolve a URL limpa. A extensão converte para o
-            // short_url oficial usando a sessão autenticada da afiliada.
-            return (
-                url.hostname.includes("mercadolivre.com.br") ||
-                url.hostname.includes("mercadolibre.com")
-            );
-        }
-
-        if (loja.includes("kabum")) {
-            return (
-                url.hostname.includes("awin1.com") &&
-                url.searchParams.get("awinmid") === "17729" &&
-                url.searchParams.get("awinaffid") === "2980279" &&
-                Boolean(url.searchParams.get("ued"))
-            );
-        }
-
-        if (loja.includes("cobasi")) {
-            return (
-                url.hostname.includes("cobasi.com.br") &&
-                url.hash.toLowerCase().includes("nexastoreonline")
-            );
-        }
-
-        return false;
-    } catch {
-        return false;
-    }
-}
+const STORE_LIMIT = 10;
 
 function normalizarTexto(valor = "") {
     return String(valor)
@@ -74,16 +23,10 @@ function normalizarTexto(valor = "") {
 function palavrasDaBusca(termo = "") {
     return normalizarTexto(termo)
         .split(" ")
-        .filter((palavra) => palavra.length > 1 && !STOP_WORDS.has(palavra));
-}
-
-function produtoCorrespondeBusca(produto, termo) {
-    const nome = normalizarTexto(produto?.nome);
-    const palavras = palavrasDaBusca(termo);
-
-    if (!nome || palavras.length === 0) return false;
-
-    return palavras.every((palavra) => nome.includes(palavra));
+        .filter((palavra) =>
+            palavra.length > 1 &&
+            !STOP_WORDS.has(palavra)
+        );
 }
 
 function calcularRelevancia(produto, termo) {
@@ -91,33 +34,45 @@ function calcularRelevancia(produto, termo) {
     const busca = normalizarTexto(termo);
     const palavras = palavrasDaBusca(termo);
 
-    if (!nome || palavras.length === 0) return 0;
+    if (!nome || palavras.length === 0) {
+        return 0;
+    }
 
     let pontos = 0;
 
-    if (nome.includes(busca)) pontos += 150;
-    if (nome.startsWith(busca)) pontos += 30;
+    if (nome === busca) pontos += 250;
+    if (nome.startsWith(busca)) pontos += 120;
+    if (nome.includes(busca)) pontos += 100;
+
+    let correspondencias = 0;
 
     for (const palavra of palavras) {
         if (nome.includes(palavra)) {
-            pontos += palavra.length >= 5 ? 35 : 22;
+            correspondencias += 1;
+            pontos += palavra.length >= 5 ? 35 : 20;
         }
     }
 
-    const correspondencias = palavras.filter((palavra) =>
-        nome.includes(palavra)
-    ).length;
+    const proporcao = correspondencias / palavras.length;
+    pontos += Math.round(proporcao * 80);
 
-    pontos += Math.round((correspondencias / palavras.length) * 50);
+    // Evita zerar resultados por pequenas diferenças no título.
+    if (correspondencias === 0) {
+        return 0;
+    }
 
     return pontos;
+}
+
+function produtoCorrespondeBusca(produto, termo) {
+    return calcularRelevancia(produto, termo) > 0;
 }
 
 function chaveDuplicidade(produto) {
     const nome = normalizarTexto(produto?.nome)
         .replace(/\b(\d+)\s*(gb|tb|kg|g|ml|l|hz|pol)\b/g, "$1$2")
         .split(" ")
-        .slice(0, 14)
+        .slice(0, 16)
         .join(" ");
 
     return `${normalizarTexto(produto?.loja)}|${nome}`;
@@ -130,12 +85,32 @@ function removerDuplicados(produtos) {
         const chave = chaveDuplicidade(produto);
         const existente = mapa.get(chave);
 
-        if (!existente || produto.preco < existente.preco) {
+        if (
+            !existente ||
+            produto.relevancia > existente.relevancia ||
+            (
+                produto.relevancia === existente.relevancia &&
+                produto.preco < existente.preco
+            )
+        ) {
             mapa.set(chave, produto);
         }
     }
 
     return [...mapa.values()];
+}
+
+function linkValido(produto = {}) {
+    const link = String(produto.link || "").trim();
+
+    if (!link) return false;
+
+    try {
+        const url = new URL(link);
+        return ["http:", "https:"].includes(url.protocol);
+    } catch {
+        return false;
+    }
 }
 
 function processarResultados(produtos, termo, limite = 32) {
@@ -154,9 +129,8 @@ function processarResultados(produtos, termo, limite = 32) {
             produto.nome &&
             Number.isFinite(produto.preco) &&
             produto.preco > 0 &&
-            produto.link &&
-            possuiAfiliado(produto) &&
-            produtoCorrespondeBusca(produto, termo)
+            linkValido(produto) &&
+            produto.relevancia > 0
         );
 
     const ordenados = removerDuplicados(normalizados).sort((a, b) => {
@@ -167,7 +141,6 @@ function processarResultados(produtos, termo, limite = 32) {
         return a.preco - b.preco;
     });
 
-    // Garante diversidade sem inserir lojas irrelevantes.
     const grupos = new Map();
 
     for (const produto of ordenados) {
@@ -182,7 +155,6 @@ function processarResultados(produtos, termo, limite = 32) {
         }
     }
 
-    // Intercala as lojas para que uma única loja não ocupe toda a resposta.
     const selecionados = [];
     let indice = 0;
     let adicionou = true;
@@ -208,7 +180,6 @@ module.exports = {
     palavrasDaBusca,
     produtoCorrespondeBusca,
     calcularRelevancia,
-    possuiAfiliado,
     removerDuplicados,
     processarResultados
 };
