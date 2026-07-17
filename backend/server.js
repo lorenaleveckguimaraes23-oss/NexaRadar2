@@ -278,6 +278,33 @@ app.get(
 );
 
 // =====================================
+// ATALHOS DE STATUS
+// =====================================
+
+async function responderStatusMercadoLivre(req, res) {
+    try {
+        const accessToken = await getValidAccessToken();
+
+        return res.json({
+            sucesso: true,
+            conectado: Boolean(accessToken),
+            userId: mercadoLivreTokens.userId,
+            expiraEm: mercadoLivreTokens.expiresAt
+        });
+    } catch (error) {
+        return res.json({
+            sucesso: true,
+            conectado: false,
+            erro: error.message
+        });
+    }
+}
+
+app.get("/ml/status", responderStatusMercadoLivre);
+app.get("/api/ml/status", responderStatusMercadoLivre);
+app.get("/api/auth/mercadolivre/status", responderStatusMercadoLivre);
+
+// =====================================
 // DESCONECTAR MERCADO LIVRE
 // =====================================
 
