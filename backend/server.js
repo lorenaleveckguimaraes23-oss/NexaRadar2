@@ -9,9 +9,15 @@ const app = express();
 
 const PORT = Number(process.env.PORT) || 3000;
 
-const ML_CLIENT_ID = process.env.ML_CLIENT_ID;
-const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET;
+const ML_CLIENT_ID = process.env.ML_CLIENT_ID; 
+const ML_CLIENT_SECRET = process.env.ML_CLIENT_SECRET; 
 const ML_REDIRECT_URI = process.env.ML_REDIRECT_URI;
+
+if (!ML_CLIENT_ID || !ML_CLIENT_SECRET || !ML_REDIRECT_URI) {
+    console.warn(
+        "[Mercado Livre] Variáveis ausentes: confira ML_CLIENT_ID, ML_CLIENT_SECRET e ML_REDIRECT_URI."
+    );
+}
 
 const oauthStates = new Map();
 
@@ -133,7 +139,7 @@ app.get("/auth/mercadolivre", (req, res) => {
 // =====================================
 
 app.get(
-    "/api/auth/mercadolivre/callback",
+    "/auth/mercadolivre/callback",
     async (req, res) => {
         const {
             code,
